@@ -23,6 +23,58 @@ width = 20
 #         label = font_.render(text, True, textCol)
 #         screen.blit(label, (xpos, ypos))
 
+class Timer:
+    def __init__(self, master):
+        self.master = master
+
+        self.state = False
+        self.minutes = 20
+        self.seconds = 0
+
+        self.mins = 20
+        self.secs = 0
+
+        self.display = Label(master, height=10, width=10, textvariable="")
+        self.display.config(text="00:00")
+        self.display.grid(row=1, column=4, columnspan=2)
+
+        self.countdown()
+
+    def countdown(self):
+        """Displays a clock starting at min:sec to 00:00, ex: 25:00 -> 00:00"""
+
+        if self.state == True:
+            if self.secs < 10:
+                if self.mins < 10:
+                    self.display.config(text="0%d : 0%d" % (self.mins, self.secs))
+                else:
+                    self.display.config(text="%d : 0%d" % (self.mins, self.secs))
+            else:
+                if self.mins < 10:
+                    self.display.config(text="0%d : %d" % (self.mins, self.secs))
+                else:
+                    self.display.config(text="%d : %d" % (self.mins, self.secs))
+
+            if (self.mins == 0) and (self.secs == 0):
+                self.display.config(text="Done!")
+            else:
+                if self.secs == 0:
+                    self.mins -= 1
+                    self.secs = 59
+                else:
+                    self.secs -= 1
+
+                self.master.after(1000, self.countdown)
+
+        else:
+            self.master.after(100, self.countdown)
+
+    def start(self):
+        print "start timer"
+        if self.state == False:
+            self.state = True
+            self.mins = self.minutes
+            self.secs = self.seconds
 
 class WOZGUI:
     def __init__(self):
@@ -37,9 +89,11 @@ class WOZGUI:
         self.session.connect("tcp://192.168.1.43:9559")
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+
         try:
             self.motion = ALProxy("ALMotion", "192.168.1.43", 9559)
-            self.motion.setOrthogonalSecurityDistance(0.08)
+            self.motion.setOrthogonalSecurityDistance(0.03)
+            self.motion.setTangentialSecurityDistance(0.03)
             self.al = ALProxy("ALAutonomousLife", "192.168.1.43", 9559)
             self.tts = ALProxy("ALTextToSpeech", "192.168.1.43", 9559)
             self.tablet = self.session.service("ALTabletService") #, "192.168.1.43", 9559)
@@ -162,6 +216,13 @@ class WOZGUI:
          isAbsolute        = True
          self.motion.angleInterpolation(names, angleLists, timeLists, isAbsolute)
 
+    def head_up(self):
+         names      = "HeadPitch"
+         angleLists = -0.3
+         timeLists  = 1.0
+         isAbsolute        = True
+         self.motion.angleInterpolation(names, angleLists, timeLists, isAbsolute)
+
     def head_straightYaw(self):
          names      = "HeadYaw"
          angleLists = 0.0
@@ -268,7 +329,7 @@ class WOZGUI:
 
         try:
             id = self.motion.post.angleInterpolationBezier(names, times, keys)
-            self.tts.say("Hey! \\eos=1\\ My name is Pepper. \\eos=1\\ It is nice to meet you!")
+            self.tts.say("Hey! \\eos=1\\ My name is Pepper. \\eos=1\\ It is nice to meet you! \\eos=1\\ \\emph=1\\ I can walk and look around. \\eos=1\\ I can also think about puzzles. \\eos=1\\ \\emph=1\\ \\rspd=95\\ But I have trouble picking up things.")
         except BaseException, err:
             print err
 
@@ -332,6 +393,163 @@ class WOZGUI:
             self.tts.say("\\pau=800\\ It was nice to meet you. \\pau=1000\\ See you next time. Bye!")
         except BaseException, err:
             print err
+
+    def thinking(self):
+        names = list()
+        times = list()
+        keys = list()
+
+        names.append("HeadPitch")
+        times.append([0.72, 1.2, 3.16, 4.72, 5.2, 5.56])
+        keys.append([[-0.113446, [3, -0.253333, 0], [3, 0.16, 0]], [0.224996, [3, -0.16, 0], [3, 0.653333, 0]], [0.200713, [3, -0.653333, 0], [3, 0.52, 0]], [0.240855, [3, -0.52, 0], [3, 0.16, 0]], [0.125664, [3, -0.16, 0.0856601], [3, 0.12, -0.0642451]], [-0.20886, [3, -0.12, 0], [3, 0, 0]]])
+
+        names.append("HeadYaw")
+        times.append([1.2, 4.72, 5.56])
+        keys.append([[0.154895, [3, -0.413333, 0], [3, 1.17333, 0]], [0.157081, [3, -1.17333, 0], [3, 0.28, 0]], [-0.305068, [3, -0.28, 0], [3, 0, 0]]])
+
+        names.append("HipPitch")
+        times.append([0.56, 1.2, 4.16, 5.08])
+        keys.append([[-0.0409819, [3, -0.2, 0], [3, 0.213333, 0]], [-0.216292, [3, -0.213333, 0.0182064], [3, 0.986667, -0.0842044]], [-0.348214, [3, -0.986667, 0], [3, 0.306667, 0]], [-0.0433329, [3, -0.306667, 0], [3, 0, 0]]])
+
+        names.append("HipRoll")
+        times.append([0.56, 1.2, 4.16, 5.08])
+        keys.append([[0, [3, -0.2, 0], [3, 0.213333, 0]], [-0.0567572, [3, -0.213333, 0], [3, 0.986667, 0]], [-0.0352817, [3, -0.986667, -0.0135575], [3, 0.306667, 0.00421382]], [-0.00344329, [3, -0.306667, 0], [3, 0, 0]]])
+
+        names.append("KneePitch")
+        times.append([0.56, 1.2, 4.16, 5.08])
+        keys.append([[-0.0110766, [3, -0.2, 0], [3, 0.213333, 0]], [0.0291458, [3, -0.213333, -0.00511062], [3, 0.986667, 0.0236366]], [0.075165, [3, -0.986667, 0], [3, 0.306667, 0]], [-0.012951, [3, -0.306667, 0], [3, 0, 0]]])
+
+        names.append("LElbowRoll")
+        times.append([0.64, 1.12, 4.64, 5.12, 5.48])
+        keys.append([[-0.799361, [3, -0.226667, 0], [3, 0.16, 0]], [-1.48487, [3, -0.16, 0.00433922], [3, 1.17333, -0.0318209]], [-1.51669, [3, -1.17333, 0.0144538], [3, 0.16, -0.00197097]], [-1.53414, [3, -0.16, 0], [3, 0.12, 0]], [-1.37739, [3, -0.12, 0], [3, 0, 0]]])
+
+        names.append("LElbowYaw")
+        times.append([0.64, 1.12, 4.64, 5.48])
+        keys.append([[-1.40324, [3, -0.226667, 0], [3, 0.16, 0]], [-0.955723, [3, -0.16, -0.00632817], [3, 1.17333, 0.0464066]], [-0.909316, [3, -1.17333, 0], [3, 0.28, 0]], [-1.54856, [3, -0.28, 0], [3, 0, 0]]])
+
+        names.append("LHand")
+        times.append([0.64, 1.12, 1.68, 2.08, 2.68, 3.08, 3.76, 4.16, 4.64, 5.12, 5.48])
+        keys.append([[0.96, [3, -0.226667, 0], [3, 0.16, 0]], [0.7036, [3, -0.16, 0.08], [3, 0.186667, -0.0933333]], [0.44, [3, -0.186667, 0], [3, 0.133333, 0]], [0.73, [3, -0.133333, 0], [3, 0.2, 0]], [0.44, [3, -0.2, 0], [3, 0.133333, 0]], [0.73, [3, -0.133333, 0], [3, 0.226667, 0]], [0.44, [3, -0.226667, 0], [3, 0.133333, 0]], [0.73, [3, -0.133333, 0], [3, 0.16, 0]], [0.65, [3, -0.16, 0.035], [3, 0.16, -0.035]], [0.52, [3, -0.16, 0], [3, 0.12, 0]], [0.844074, [3, -0.12, 0], [3, 0, 0]]])
+
+        names.append("LShoulderPitch")
+        times.append([1.12, 4.64, 5.12, 5.48])
+        keys.append([[-0.512397, [3, -0.386667, 0], [3, 1.17333, 0]], [-0.581195, [3, -1.17333, 0], [3, 0.16, 0]], [0.0994838, [3, -0.16, -0.194603], [3, 0.12, 0.145952]], [0.44047, [3, -0.12, 0], [3, 0, 0]]])
+
+        names.append("LShoulderRoll")
+        times.append([1.12, 4.64, 5.48])
+        keys.append([[0.328234, [3, -0.386667, 0], [3, 1.17333, 0]], [0.342085, [3, -1.17333, 0], [3, 0.28, 0]], [0.233874, [3, -0.28, 0], [3, 0, 0]]])
+
+        names.append("LWristYaw")
+        times.append([0.64, 1.12, 4.64, 5.48])
+        keys.append([[-0.895354, [3, -0.226667, 0], [3, 0.16, 0]], [-0.833004, [3, -0.16, 0], [3, 1.17333, 0]], [-0.862194, [3, -1.17333, 0], [3, 0.28, 0]], [0.0192082, [3, -0.28, 0], [3, 0, 0]]])
+
+        names.append("RElbowRoll")
+        times.append([0.56, 1.04, 4.56, 5.04, 5.4])
+        keys.append([[0.574213, [3, -0.2, 0], [3, 0.16, 0]], [0.382009, [3, -0.16, 0.0148077], [3, 1.17333, -0.10859]], [0.20402, [3, -1.17333, 0], [3, 0.16, 0]], [0.375246, [3, -0.16, 0], [3, 0.12, 0]], [0.25889, [3, -0.12, 0], [3, 0, 0]]])
+
+        names.append("RElbowYaw")
+        times.append([0.56, 1.04, 4.56, 5.4])
+        keys.append([[1.47829, [3, -0.2, 0], [3, 0.16, 0]], [1.23483, [3, -0.16, 0], [3, 1.17333, 0]], [1.23639, [3, -1.17333, 0], [3, 0.28, 0]], [1.2217, [3, -0.28, 0], [3, 0, 0]]])
+
+        names.append("RHand")
+        times.append([0.56, 1.04, 4.56, 5.04, 5.4])
+        keys.append([[0.54, [3, -0.2, 0], [3, 0.16, 0]], [0.3504, [3, -0.16, 0], [3, 1.17333, 0]], [0.510545, [3, -1.17333, 0], [3, 0.16, 0]], [0.31, [3, -0.16, 0], [3, 0.12, 0]], [0.412984, [3, -0.12, 0], [3, 0, 0]]])
+
+        names.append("RShoulderPitch")
+        times.append([1.04, 4.56, 5.4])
+        keys.append([[1.54785, [3, -0.36, 0], [3, 1.17333, 0]], [1.36831, [3, -1.17333, 0], [3, 0.28, 0]], [1.43506, [3, -0.28, 0], [3, 0, 0]]])
+
+        names.append("RShoulderRoll")
+        times.append([1.04, 4.56, 5.4])
+        keys.append([[-0.108956, [3, -0.36, 0], [3, 1.17333, 0]], [-0.085903, [3, -1.17333, 0], [3, 0.28, 0]], [-0.119999, [3, -0.28, 0], [3, 0, 0]]])
+
+        names.append("RWristYaw")
+        times.append([0.56, 1.04, 4.56, 5.4])
+        keys.append([[0.497419, [3, -0.2, 0], [3, 0.16, 0]], [0.030638, [3, -0.16, 0], [3, 1.17333, 0]], [0.093532, [3, -1.17333, 0], [3, 0.28, 0]], [-0.033162, [3, -0.28, 0], [3, 0, 0]]])
+
+        try:
+            id = self.motion.post.angleInterpolationBezier(names, times, keys)
+            self.tts.say("mmm")
+            self.postureProxy.goToPosture("Stand", 1)
+        except BaseException, err:
+            print err
+
+        # try:
+        #   # uncomment the following line and modify the IP if you use this script outside Choregraphe.
+        #   # motion = ALProxy("ALMotion", IP, 9559)
+        #   self.motion.angleInterpolationBezier(names, times, keys)
+        #   self.postureProxy.goToPosture("Stand", 1)
+        # except BaseException, err:
+        #   print err
+
+
+    def point(self):
+        # Choregraphe bezier export in Python.
+        names = list()
+        times = list()
+        keys = list()
+
+        names.append("RElbowYaw")
+        times.append([1.0, 2.0])
+        keys.append([[0.879646, [3, -0.0666667, 0], [3, 0.186667, 0]], [0.877901, [3, -0.186667, 0], [3, 0, 0]]])
+
+        names.append("RHand")
+        times.append([1.0,2.0])
+        keys.append([[0.98, [3, -0.0666667, 0], [3, 0.186667, 0]], [0.69, [3, -0.186667, 0], [3, 0, 0]]])
+
+        names.append("RShoulderPitch")
+        times.append([1.0,2.0])
+        keys.append([[0.616101, [3, -0.0666667, 0], [3, 0.186667, 0]], [1.59349, [3, -0.186667, 0], [3, 0, 0]]])
+
+        names.append("RShoulderRoll")
+        times.append([1.0,2.0])
+        keys.append([[-0.13439, [3, -0.0666667, 0], [3, 0.186667, 0]], [-0.0297775, [3, -0.186667, 0], [3, 0, 0]]])
+
+        names.append("RWristYaw")
+        times.append([1.0])
+        keys.append([[-0.308923, [3, -0.0666667, 0], [3, 0, 0]]])
+
+        try:
+          # uncomment the following line and modify the IP if you use this script outside Choregraphe.
+          # motion = ALProxy("ALMotion", IP, 9559)
+          self.motion.angleInterpolationBezier(names, times, keys)
+        except BaseException, err:
+          print err
+
+
+    def point_withspeech(self):
+        # Choregraphe bezier export in Python.
+        names = list()
+        times = list()
+        keys = list()
+
+        names.append("RElbowYaw")
+        times.append([1.0, 2.0])
+        keys.append([[0.879646, [3, -0.0666667, 0], [3, 0.186667, 0]], [0.877901, [3, -0.186667, 0], [3, 0, 0]]])
+
+        names.append("RHand")
+        times.append([1.0,2.0])
+        keys.append([[0.98, [3, -0.0666667, 0], [3, 0.186667, 0]], [0.69, [3, -0.186667, 0], [3, 0, 0]]])
+
+        names.append("RShoulderPitch")
+        times.append([1.0,2.0])
+        keys.append([[0.616101, [3, -0.0666667, 0], [3, 0.186667, 0]], [1.59349, [3, -0.186667, 0], [3, 0, 0]]])
+
+        names.append("RShoulderRoll")
+        times.append([1.0,2.0])
+        keys.append([[-0.13439, [3, -0.0666667, 0], [3, 0.186667, 0]], [-0.0297775, [3, -0.186667, 0], [3, 0, 0]]])
+
+        names.append("RWristYaw")
+        times.append([1.0])
+        keys.append([[-0.308923, [3, -0.0666667, 0], [3, 0, 0]]])
+
+        try:
+          # uncomment the following line and modify the IP if you use this script outside Choregraphe.
+          # motion = ALProxy("ALMotion", IP, 9559)
+          id = self.motion.post.angleInterpolationBezier(names, times, keys)
+          self.tts.say("Look here!")
+        except BaseException, err:
+          print err
 
     def keyup(self, e):
         if e.keycode in self.history:
@@ -399,15 +617,15 @@ class WOZGUI:
             #elif 40 in self.history and 39 in self.history:
                 # BACK RIGHT
             #    self.motion.move(-0.8,0.0,-0.3)
-            if 38 in self.history:
+            if 104 in self.history:
                 self.motion.move(1.0,0.0,0.0)
-            elif 37 in self.history:
+            elif 100 in self.history:
                 # LEFT
                 self.motion.move(0.0,0.0,0.78)
-            elif 39 in self.history:
+            elif 102 in self.history:
                 # RIGHT
                 self.motion.move(0.0,0.0,-0.78)
-            elif 40 in self.history:
+            elif 101 in self.history:
                 self.motion.move(-0.8,0.0,0.0)
         else:
             self.motion.move(0.0,0.0,0.0)
@@ -446,12 +664,26 @@ class WOZGUI:
 
     def showPassword(self):
         print("show")
-        self.tablet.showImage("http://198.18.0.1/html/access_granted.jpg")
+        self.sayText("Nice job! \\eos=1\\ We escaped the room! \\eos=1\\ Please wait for the experimenter to come in.")
+
 
     def startGame(self):
         msg = '[GAME] start'
         self.sock.sendto(msg, (self.UDP_IP, self.UDP_PORT))
         logging.info("[ACTION] startGame msg send to remote laptop")
+        self.my_timer.start()
+
+    def gameOver(self):
+        msg = '[GAME] gameover'
+        self.sock.sendto(msg, (self.UDP_IP, self.UDP_PORT))
+        logging.info("[ACTION] gameOver msg send to remote laptop")
+
+    def rightKey(self, e):
+        self.performBehavior('introduce')
+
+    def leftKey(self, e):
+        print("LEFT")
+        self.startGame()
 
     def main(self):
 
@@ -463,39 +695,52 @@ class WOZGUI:
         self.root.bind('<Return>', self.performAction)
         self.input = False
         self.funcs = {'escapeRoom': self.escapeRoom, 'wave_goodbye': self.wave_goodbye, 'sayInputText': self.sayInputText, 'introduce': self.introduce}
-
+        self.root.bind_all('<1>', lambda event: event.widget.focus_set())
+        self.my_timer= Timer(self.root)
         # ANIMATED BEHAVIORS
-        lblBeh = Label(self.root, text="ANIMATED BEHAVIORS").grid(row=2,column=0, columnspan=4, sticky=W+E)
+        lblBeh = Label(self.root, text="INTRODUCTION").grid(row=2,column=0, columnspan=4, sticky=W+E)
         introducebutton = Button(self.root, height=1, width=width, text="introduce", fg="red", command=lambda: self.performBehavior('introduce')).grid(row=3,column=0)
+        self.root.bind('<Right>', self.rightKey)
+        self.root.bind('<Left>', self.leftKey)
         wavebutton = Button(self.root, height=1, width=width, text="wave_goodbye", fg="red", command=lambda: self.performBehavior('wave_goodbye')).grid(row=3,column=2)
         escaperoombutton = Button(self.root, height=1, width=width, text="escapeRoom", fg="red", command=lambda: self.performBehavior('escapeRoom')).grid(row=3,column=1,padx=(0,10))
+        fillerlab2 = Label(self.root, text="").grid(row=4,column=1,sticky=W+E)
+        ahokaywellbutton = Button(self.root, height=1, width=width, text="Ah ok! Well...", fg="blue", command=lambda: self.sayText("\\rspd=90\\Ah, ok! \\rspd=60\\ Well...")).grid(row=5,column=0,padx=(0,10))
 
-        head_straightYawbutton = Button(self.root, height=1, width=width, text="head zero Yaw", fg="red", command=self.head_straightYaw).grid(row=5,column=1,padx=(0,10))
-        head_straightPitchbutton = Button(self.root, height=1, width=width, text="head zero Pitch", fg="red", command=self.head_straightPitch).grid(row=6,column=1,padx=(0,10))
+        letstartbutton = Button(self.root, height=1, width=width, text="Let's start", fg="blue", command=lambda: self.sayText("Let's start!")).grid(row=5,column=1,padx=(0,10))
+        first_roombutton = Button(self.root, height=1, width=width, text="This is my first", fg="blue", command=lambda: self.sayText('This is my first escape room')).grid(row=6,column=1,padx=(0,10))
+        fillerlab4 = Label(self.root, text="").grid(row=7,column=1,sticky=W+E)
+        head_upbutton = Button(self.root, height=1, width=width, text="head up", fg="red", command=self.head_up).grid(row=8,column=1,padx=(0,10))
 
-        head_leftbutton = Button(self.root, height=1, width=width, text="head left", fg="red", command=self.head_left).grid(row=5,column=0,padx=(0,10))
-        head_rightbutton = Button(self.root, height=1, width=width, text="head right", fg="red", command=self.head_right).grid(row=5,column=2,padx=(0,10))
+        head_straightYawbutton = Button(self.root, height=1, width=width, text="head zero Yaw", fg="red", command=self.head_straightYaw).grid(row=10,column=1,padx=(0,10))
+        head_straightPitchbutton = Button(self.root, height=1, width=width, text="head zero Pitch", fg="red", command=self.head_straightPitch).grid(row=9,column=1,padx=(0,10))
 
-        head_downbutton = Button(self.root, height=1, width=width, text="head down", fg="red", command=self.head_down).grid(row=7,column=1,padx=(0,10))
+        head_leftbutton = Button(self.root, height=1, width=width, text="head left", fg="red", command=self.head_left).grid(row=10,column=0,padx=(0,10))
+        head_rightbutton = Button(self.root, height=1, width=width, text="head right", fg="red", command=self.head_right).grid(row=10,column=2,padx=(0,10))
 
-        fillerlab2 = Label(self.root, text="").grid(row=8,column=1,sticky=W+E)
-        letstartbutton = Button(self.root, height=1, width=width, text="Let's start", fg="blue", command=lambda: self.sayText("Let's start!")).grid(row=9,column=1,padx=(0,10))
-        first_roombutton = Button(self.root, height=1, width=width, text="This is my first", fg="blue", command=lambda: self.sayText('This is my first')).grid(row=10,column=1,padx=(0,10))
+        head_downbutton = Button(self.root, height=1, width=width, text="head down", fg="red", command=self.head_down).grid(row=11,column=1,padx=(0,10))
+
+        thinking_button = Button(self.root, height=1, width=width, text="Thinking Posture", fg="red", command=self.thinking).grid(row=13,column=1,padx=(0,10))
+        point_button = Button(self.root, height=1, width=width, text="Point Posture", fg="red", command=self.point).grid(row=14,column=1,padx=(0,10))
+        pointspeech_button = Button(self.root, height=1, width=width, text="Point + Look here", fg="red", command=self.point_withspeech).grid(row=15,column=1,padx=(0,10))
+
 
         # UTTERANCES
-        lbl = Label(self.root, text="UTTERANCES").grid(row=2,column=4,columnspan=4,sticky=W+E)
+        lbl = Label(self.root, text="GAME PLAY UTTERANCES").grid(row=2,column=4,columnspan=4,sticky=W+E)
 
         # (DIS) AGREEMENT
         nobutton = Button(self.root, height=1, width=width, text="no", fg="blue", command=lambda: self.sayText('no')).grid(row=3, column=3,sticky=E+W)
         yesbutton = Button(self.root, height=1, width=width, text="yes", fg="blue", command=lambda: self.sayText('yes')).grid(row=4, column=3,sticky=E+W)
         agreebutton = Button(self.root, height=1, width=width, text="I agree", fg="blue", command=lambda: self.sayText("I agree")).grid(row=5, column=3,sticky=E+W)
-        disagreebutton = Button(self.root, height=1, width=width, text="I do not agree", fg="blue", command=lambda: self.sayText("I do not agree")).grid(row=6, column=3,sticky=E+W)
+        thinksobutton = Button(self.root, height=1, width=width, text="I think so", fg="blue", command=lambda: self.sayText("I think so")).grid(row=6, column=3,sticky=E+W)
+        idontthinksobutton = Button(self.root, height=1, width=width, text="I don't think so", fg="blue", command=lambda: self.sayText("I don't think so")).grid(row=7, column=3,sticky=E+W)
 
         # UNCERTAINTY
         idkbutton = Button(self.root, height=1, width=width, text="I don't know", fg="blue", command=lambda: self.sayText("I don't know")).grid(row=3, column=4,sticky=E+W)
-        maybebutton = Button(self.root, height=1, width=width, text="Maybe", fg="blue", command=lambda: self.sayText("Maybe")).grid(row=4, column=4,sticky=E+W)
+        maybebutton = Button(self.root, height=1, width=width, text="Maybe", fg="blue", command=lambda: self.sayText("\\emph=1\\Maybe")).grid(row=4, column=4,sticky=E+W)
         clarbutton = Button(self.root, height=1, width=width, text="What do you mean?", fg="blue", command=lambda: self.sayText("What do you mean?")).grid(row=5, column=4,sticky=E+W)
         repeatbutton = Button(self.root, height=1, width=width, text="Can you say that again?", fg="blue", command=lambda: self.sayText("Can you say that again?")).grid(row=6, column=4,sticky=E+W)
+        whybutton = Button(self.root, height=1, width=width, text="Why?", fg="blue", command=lambda: self.sayText("Why?")).grid(row=7, column=4,sticky=E+W)
         #clarbutton = Button(self.root, height=1, width=width, text="What do you mean?", fg="blue", command=lambda: self.sayText("What do you mean?")).grid(row=5, column=4,sticky=E+W)
 
         # CAPABILITY
@@ -503,38 +748,64 @@ class WOZGUI:
         cannotbutton = Button(self.root, height=1, width=width, text="I cannot do that", fg="blue", command=lambda: self.sayText("I cannot do that")).grid(row=4, column=5,sticky=E+W)
 
         # APOLOGIES
-        lab = Label(self.root, width=20).grid(row=7, column=3)
-        sorrybutton = Button(self.root, height=1, width=width, text="I'm sorry", fg="blue", command=lambda: self.sayText("I'm sorry")).grid(row=8, column=3,sticky=E+W)
-        meannotbutton = Button(self.root, height=1, width=width, text="I did not mean that", fg="blue", command=lambda: self.sayText("I did not \\emph=1\\ mean that")).grid(row=9, column=3,sticky=E+W)
+        lab = Label(self.root, width=20).grid(row=8, column=3)
+        sorrybutton = Button(self.root, height=1, width=width, text="I'm sorry", fg="blue", command=lambda: self.sayText("I'm sorry")).grid(row=9, column=3,sticky=E+W)
+        meannotbutton = Button(self.root, height=1, width=width, text="I did not mean that", fg="blue", command=lambda: self.sayText("I did not \\emph=1\\ mean that")).grid(row=10, column=3,sticky=E+W)
 
         # FILLERS
-        hmmbutton = Button(self.root, height=1, width=width, text="Hmm", fg="blue", command=lambda: self.sayText("mmm")).grid(row=9, column=4,sticky=E+W)
-        ahbutton = Button(self.root, height=1, width=width, text="Ah!", fg="blue", command=lambda: self.sayText("ah!")).grid(row=8, column=4,sticky=E+W)
-        okbutton = Button(self.root, height=1, width=width, text="Ok!", fg="blue", command=lambda: self.sayText("Ok!")).grid(row=8, column=5,sticky=E+W)
+        hmmbutton = Button(self.root, height=1, width=width, text="Hmm", fg="blue", command=lambda: self.sayText("mmm")).grid(row=10, column=4,sticky=E+W)
+        ahbutton = Button(self.root, height=1, width=width, text="Ah!", fg="blue", command=lambda: self.sayText("ah!")).grid(row=9, column=4,sticky=E+W)
+        okbutton = Button(self.root, height=1, width=width, text="Ok!", fg="blue", command=lambda: self.sayText("Ok!")).grid(row=9, column=5,sticky=E+W)
+        nicebutton = Button(self.root, height=1, width=width, text="Nice!", fg="blue", command=lambda: self.sayText("Nice!")).grid(row=9, column=6,sticky=E+W)
+        thanksbutton = Button(self.root, height=1, width=width, text="Thanks!", fg="blue", command=lambda: self.sayText("\\emph=1\\ \\rspd=80\\ Thanks!")).grid(row=10, column=6,sticky=E+W)
+        surebutton = Button(self.root, height=1, width=width, text="Sure", fg="blue", command=lambda: self.sayText("Sure")).grid(row=10, column=5,sticky=E+W)
 
-        fillerlab = Label(self.root, width=20).grid(row=10, column=3)
-        task1Label = Label(self.root, text="Task 1: OBJECTS", width=20).grid(row=11, column=3)
-        fifteenscrewsbutton = Button(self.root, height=1, width=width, text="Fifteen screws", fg="blue", command=lambda: self.sayText("There are \\emph=2\\15")).grid(row=12, column=3,sticky=E+W)
-        readbarcodebutton = Button(self.root, height=1, width=width, text="Say Barcode", fg="blue", command=lambda: self.sayText("The missing digits are \\emph=2\\ 33")).grid(row=13, column=3,sticky=E+W)
-        lookherebutton = Button(self.root, height=1, width=width, text="Look here!", fg="blue", command=lambda: self.sayText("Look here!")).grid(row=14, column=3,sticky=E+W)
+
+        fillerlab = Label(self.root, width=20).grid(row=11, column=3)
+        task1Label = Label(self.root, text="Task 1: OBJECTS", width=20).grid(row=12, column=3)
+        fifteenscrewsbutton = Button(self.root, height=1, width=width, text="Fifteen screws", fg="blue", command=lambda: self.sayText("There are \\emph=2\\15")).grid(row=13, column=3,sticky=E+W)
+        readbarcodebutton = Button(self.root, height=1, width=width, text="Say Barcode", fg="blue", command=lambda: self.sayText("The two digits missing in the barcode are \\emph=2\\ 3 and \\emph=2\\ 4")).grid(row=14, column=3,sticky=E+W)
+        lookherebutton = Button(self.root, height=1, width=width, text="Look here!", fg="blue", command=lambda: self.sayText("Look here!")).grid(row=18, column=3,sticky=E+W)
         letmelookbutton = Button(self.root, height=1, width=width, text="Let me look!", fg="blue", command=lambda: self.sayText("Let me have a look.")).grid(row=15, column=3,sticky=E+W)
+        lookaroundbutton = Button(self.root, height=1, width=width, text="Let's look around!", fg="blue", command=lambda: self.sayText("Let's look around.")).grid(row=17, column=3,sticky=E+W)
 
-        fillerlab = Label(self.root, width=20).grid(row=10, column=4)
-        task1Label = Label(self.root, text="Task 2: MAZE", width=20).grid(row=11, column=4)
-        sayrightbutton = Button(self.root, height=1, width=width, text="Right", fg="blue", command=lambda: self.sayText("Right")).grid(row=12, column=4,sticky=E+W)
-        sayleftbutton = Button(self.root, height=1, width=width, text="Left", fg="blue", command=lambda: self.sayText("Left")).grid(row=13, column=4,sticky=E+W)
-        wheretogobutton = Button(self.root, height=1, width=width, text="Where should I go?", fg="blue", command=lambda: self.sayText("\\emph=2\\ Where should I go?")).grid(row=14, column=4,sticky=E+W)
-        wemadeitbutton = Button(self.root, height=1, width=width, text="Hey, look on tablet!", fg="blue", command=lambda: self.sayText("Hey, look on my tablet!")).grid(row=15, column=4,sticky=E+W)
+        fillerlab3 = Label(self.root, width=20).grid(row=19, column=3)
+        whatisthatbutton = Button(self.root, height=1, width=width, text="What is that?", fg="blue", command=lambda: self.sayText("\\emph=2\\What is that?")).grid(row=20, column=3,sticky=E+W)
+        isthissomethingbutton = Button(self.root, height=1, width=width, text="Is this something?", fg="blue", command=lambda: self.sayText("\\emph=2\\Is this something?")).grid(row=21, column=3,sticky=E+W)
+        isitcompletebutton = Button(self.root, height=1, width=width, text="Is it complete?", fg="blue", command=lambda: self.sayText("\\emph=2\\Is it complete?")).grid(row=22, column=3,sticky=E+W)
+        whatismissingbutton = Button(self.root, height=1, width=width, text="What is missing?", fg="blue", command=lambda: self.sayText("\\emph=2\\What is missing?")).grid(row=23, column=3,sticky=E+W)
+
+        whatdoyouthinkbutton = Button(self.root, height=1, width=width, text="What do you think?", fg="blue", command=lambda: self.sayText("\\emph=1\\What do you think?")).grid(row=20, column=4,sticky=E+W)
+        anyideasbutton = Button(self.root, height=1, width=width, text="Any ideas?", fg="blue", command=lambda: self.sayText("\\emph=2\\Any ideas?")).grid(row=21, column=4,sticky=E+W)
+        maybeweshouldbutton = Button(self.root, height=1, width=width, text="Maybe we should..mmm?", fg="blue", command=lambda: self.sayText("\\emph=2\\ Maybe we should \\pau=500\\ mmm")).grid(row=22, column=4,sticky=E+W)
+        letmethinkbutton = Button(self.root, height=1, width=width, text="Let's think!", fg="blue", command=lambda: self.sayText("Let's think!")).grid(row=23, column=4,sticky=E+W)
+
+        fillerlab = Label(self.root, width=20).grid(row=11, column=4)
+        task1Label = Label(self.root, text="Task 2: MAZE", width=20).grid(row=12, column=4)
+        sayrightbutton = Button(self.root, height=1, width=width, text="Right", fg="blue", command=lambda: self.sayText("\\emph=2\\Right?")).grid(row=13, column=4,sticky=E+W)
+        sayleftbutton = Button(self.root, height=1, width=width, text="Left", fg="blue", command=lambda: self.sayText("\emph=2\\Left?")).grid(row=14, column=4,sticky=E+W)
+        canyouhelpmebutton = Button(self.root, height=1, width=width, text="Can you help me?", fg="blue", command=lambda: self.sayText("Can you help me?")).grid(row=15, column=4,sticky=E+W)
+        guidemebutton = Button(self.root, height=1, width=width, text="Turn and stop?", fg="blue", command=lambda: self.sayText("\\rspd=90\\ Can you tell me when to turn and stop?")).grid(row=15, column=5,sticky=E+W)
+        guidemebutton = Button(self.root, height=1, width=width, text="Forward,backward, etc.", fg="blue", command=lambda: self.sayText("Forward, backward, left, right, and stop.")).grid(row=16, column=5,sticky=E+W)
+
+        wheretogobutton = Button(self.root, height=1, width=width, text="Where should I go?", fg="blue", command=lambda: self.sayText("\\emph=2\\ Where should I go?")).grid(row=16, column=4,sticky=E+W)
+        wemadeitbutton = Button(self.root, height=1, width=width, text="CONGRATULATIONS!", fg="blue", command=lambda: self.sayText("\\rspd=110\\ Congratulations! \\eos=1\\ We escaped the room! \\eos=1\\ Please wait for the experimenter to come in.")).grid(row=17, column=5,sticky=E+W)
+        gameoverbutton = Button(self.root, height=1, width=width, text="GAME OVER!", fg="blue", command=lambda: self.sayText("\\rspd=90\\ Oh no!  \\emph=2\\ Game over! \\eos=1\\ \\rspd=100\\ We did not escape the room. \\eos=1\\ Please wait for the experimenter to come in.")).grid(row=18, column=5,sticky=E+W)
+        continuebutton = Button(self.root, height=1, width=width, text="TRAP BUT CONTINUE!", fg="blue", command=lambda: self.sayText("\\rspd=90\\ Oh no!  \\emph=2\\ \\rspd=105\\ I've been spotted by the security camera! \\eos=1\\ \\rspd=100\\ Quick! Let's escape the room.")).grid(row=19, column=5,sticky=E+W)
 
 
         lbl = Label(self.root, text="GAME ACTIONS").grid(row=0,column=0,columnspan=4,sticky=W+E)
         startGame = Button(self.root, height=1, width=width, text="Start Game", fg="purple", command=self.startGame).grid(row=1, column=0, sticky=E+W)
-        showPassword = Button(self.root, height=1, width=width, text="Show Password", fg="purple", command=self.showPassword).grid(row=1, column=1, sticky=E+W)
+        gameOver = Button(self.root, height=1, width=width, text="Game Over", fg="purple", command=self.gameOver).grid(row=1, column=1, sticky=E+W)
+
+
+        #showPassword = Button(self.root, height=1, width=width, text="Show Password", fg="purple", command=self.showPassword).grid(row=1, column=1, sticky=E+W)
 
         # showmazebutton = Button(self.root, height=1, width=width, text="Show Maze", fg="purple", command=self.showMaze).grid(row=1, column=1, sticky=E+W)
         self.textBox = Text(self.root, height=1, width=40, padx=2)
         self.textBox.grid(row=3,column=10, sticky=E+W)
         self.textBox.bind('<Enter>', self.setInput)
+
         #buttonCommit = Button(self.root, height=1, width=10, text="commit", command=self.sayInputText).grid(row=4,column=10,sticky=E+W)
         quitbutton = Button(self.root, text="Quit", fg="red", command=self.quit).grid(row=1,column=5, padx=(10,1), pady=(1,30))
 
@@ -563,7 +834,7 @@ if __name__ == '__main__':
 
     ## check if file already exists, if so ask user if they want to add to that file.
     if not os.path.isfile(filename):
-        logger = logging.basicConfig(filename=filename,
+        logger = logging.basicConfig(filename='logs/'+filename,
                                                         format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
                                                         level=logging.DEBUG)
     else:
@@ -576,6 +847,5 @@ if __name__ == '__main__':
             sys.exit()
         else:
             print("Please anwer with [y/n], do you want to add to this file?")
-
     wozgui = WOZGUI()
     wozgui.main()
